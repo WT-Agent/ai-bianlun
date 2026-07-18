@@ -1,16 +1,10 @@
-# 网腾无限AI辩论擂台
-
-## 项目介绍
-
 <div align="center">
 
 # [网腾无限AI辩论擂台]
 
 **[一个支持立场设定与五种特色对手风格的 AI 辩论模拟器，基于 Vue 3 + Vite + Vanilla CSS 构建]**
 
-[如果有的话，放一张极具代表性的项目截图/GIF动图]
-
-[Vue3] · [TypeScript] · [Vite] · [Node.js] · [开源协议如 MIT]
+[Vue3] · [TypeScript] · [Vite] · [Node.js] · [开源协议 MIT]
 
 [![GitHub stars](https://img.shields.io/github/stars/WT-Agent/ai-bianlun?style=social)](https://github.com/WT-Agent/ai-bianlun)
 [![GitHub license](https://img.shields.io/github/license/WT-Agent/ai-bianlun)](https://github.com/WT-Agent/ai-bianlun/blob/main/LICENSE)
@@ -104,7 +98,7 @@ pnpm build
 ## 联系方式
 
 - GitHub Issues: [提交反馈](https://github.com/WT-Agent/ai-bianlun/issues)
-- 邮箱: your_email@example.com
+- 邮箱: us@wuxian.xyz
 
 ## 打赏支持
 
@@ -118,7 +112,6 @@ pnpm build
 
 </div>
 
-- Buy Me a Coffee: https://buymeacoffee.com/your_profile
 
 ## 版权与许可
 

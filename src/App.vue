@@ -1,5 +1,16 @@
-<template>
   <div class="app-container">
+    <!-- 右上角常驻分享按钮 -->
+    <button class="floating-share-btn" @click="showShareGuide = true">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="share-icon">
+        <circle cx="18" cy="5" r="3"></circle>
+        <circle cx="6" cy="12" r="3"></circle>
+        <circle cx="18" cy="19" r="3"></circle>
+        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+      </svg>
+      <span>分享</span>
+    </button>
+
     <header>
       <h1>{{ appTitle }}</h1>
       <p>智能 AI 体验引擎 · 开启创作灵感</p>
@@ -149,9 +160,6 @@
               <div style="font-size: 0.75rem; margin-top: 0.25rem; color: var(--text-secondary);">钉钉</div>
             </div>
           </div>
-          <p style="text-align: center; font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.5rem;">
-            微信号/联系文案: <span style="color: var(--primary-color); font-weight: bold;">{{ wechatId }}</span>
-          </p>
         </div>
         <button class="modal-btn" @click="showContact = false">关闭</button>
       </div>
@@ -443,5 +451,39 @@ const copyText = async () => {
 @keyframes bounce {
   from { transform: translateY(0); }
   to { transform: translateY(-10px); }
+}
+
+/* 右上角常驻分享按钮 */
+.floating-share-btn {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 99;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 0.8rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.floating-share-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: var(--primary-color);
+  box-shadow: 0 4px 16px rgba(168, 85, 247, 0.2);
+}
+
+.share-icon {
+  width: 14px;
+  height: 14px;
 }
 </style>
