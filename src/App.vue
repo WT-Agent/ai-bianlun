@@ -1,3 +1,4 @@
+<template>
   <div class="app-container">
     <!-- 右上角常驻分享按钮 -->
     <button class="floating-share-btn" @click="showShareGuide = true">
