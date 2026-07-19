@@ -1,5 +1,15 @@
 <template>
   <div class="app-container">
+    <!-- 顶部生成成功浮动 Toast -->
+    <transition name="fade">
+      <div v-if="showSuccessToast" class="top-success-toast">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+        <span>辩论对抗解析生成成功！</span>
+      </div>
+    </transition>
+
     <!-- 右上角常驻分享按钮 -->
     <button class="floating-share-btn" @click="showShareGuide = true">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="share-icon">
@@ -12,155 +22,107 @@
       <span>分享</span>
     </button>
 
+    <!-- 顶部 App Header (已移除未登录额度提示栏) -->
     <header>
       <h1>{{ appTitle }}</h1>
-      <p>智能 AI 体验引擎 · 开启创作灵感</p>
+      <p>智能 AI 体验引擎 · 设定立场与五大对手流派唇枪舌战</p>
     </header>
 
-    <!-- 活跃动态 -->
+    <!-- 活跃动态与使用人数轮播 -->
     <UserTicker />
 
-    <!-- 核心卡片 -->
+    <!-- 核心输入与生成卡片 (模块一：一键体验) -->
     <main class="glass-card input-group">
-      <div class="card-tabs">
-        <button class="tab-btn" :class="{ active: !showHistory }" @click="showHistory = false">
-          辩论主页
-        </button>
-        <button class="tab-btn" :class="{ active: showHistory }" @click="showHistory = true">
-          历史记录 ({{ historyList.length }})
-        </button>
+      <div class="selector-group">
+        <label class="selector-label">输入您要辩论的主题或冲突焦点</label>
+        <textarea 
+          v-model="userInput" 
+          placeholder="比如：人工智能创作是否具备人类艺术的真正灵魂？上班摸鱼被抓到怎么辩解..."
+          rows="4"
+        ></textarea>
       </div>
 
-      <div v-if="showHistory" class="history-view">
-        <div class="history-header">
-          <span>本地辩论历史记录</span>
-          <button v-if="historyList.length > 0" class="clear-all-btn" @click="clearAllHistory">清空全部</button>
-        </div>
-
-        <div v-if="historyList.length === 0" class="empty-state">
-          <p>暂无历史辩论记录</p>
-        </div>
-
-        <div v-else class="history-grid">
-          <div v-for="item in historyList" :key="item.id" class="history-card">
-            <div class="h-card-header">
-              <span class="h-card-style">{{ item.styleLabel }}</span>
-              <span class="h-card-time">{{ item.timestamp }}</span>
-            </div>
-            
-            <div class="h-card-body">
-              <p class="h-card-input">
-                <span class="nature-pill" style="margin-right: 0.25rem;">{{ item.stance }}</span>
-                <strong>辩题：</strong>{{ item.topic }}
-              </p>
-              <p class="h-card-excerpt"><strong>辩词纪实：</strong>{{ item.output }}</p>
-            </div>
-
-            <div class="h-card-actions">
-              <button class="h-action-btn load-btn" @click="selectHistoryItem(item)">
-                加载详情
-              </button>
-              <button class="h-action-btn delete-btn" @click="deleteHistoryRecord(item.id)">
-                删除
-              </button>
-            </div>
-          </div>
+      <div class="selector-group">
+        <label class="selector-label">选择您的辩论立场</label>
+        <div class="position-selector">
+          <button 
+            v-for="pos in positionOptions" 
+            :key="pos.value"
+            class="position-option"
+            :class="{ active: activePosition === pos.value }"
+            @click="activePosition = pos.value"
+          >
+            {{ pos.label }}
+          </button>
         </div>
       </div>
 
-      <div v-else>
-        <div v-if="!result" class="divination-setup">
-        <div class="selector-group">
-          <label class="selector-label">选择您的立场</label>
-          <div class="stance-selector">
-            <button 
-              class="stance-option" 
-              :class="{ active: inquiryStance === '正方' }" 
-              @click="inquiryStance = '正方'"
-            >
-              正方 (支持)
-            </button>
-            <button 
-              class="stance-option" 
-              :class="{ active: inquiryStance === '反方' }" 
-              @click="inquiryStance = '反方'"
-            >
-              反方 (反对)
-            </button>
-            <button 
-              class="stance-option" 
-              :class="{ active: inquiryStance === '裁判' }" 
-              @click="inquiryStance = '裁判'"
-            >
-              裁判 (评判)
-            </button>
-          </div>
-        </div>
-
-        <div class="selector-group">
-          <label class="selector-label">选择辩论对手 / 流派</label>
-          <select v-model="activeStyle" class="style-select">
-            <option 
-              v-for="style in styleOptions" 
-              :key="style.value" 
-              :value="style.value"
-            >
-              {{ style.label }}
-            </option>
-          </select>
-        </div>
-
-        <div class="selector-group">
-          <label class="selector-label">输入辩论主题 / 辩题</label>
-          <textarea 
-            v-model="userInput" 
-            placeholder="请输入您的辩题，例如：吃粽子到底该吃甜的还是咸的？或者：上班摸鱼被老板抓到，如何理直气壮地为自己辩护？"
-          ></textarea>
-        </div>
-
-        <button 
-          class="action-btn" 
-          :disabled="!userInput.trim() || loading" 
-          @click="handleGenerate"
-        >
-          {{ loading ? '辩驳推演中...' : '开启辩论，针锋相对' }}
-        </button>
-      </div>
-
-      <!-- 结果卡片展示 -->
-      <div v-else class="divination-result">
-        <div class="result-header">
-          <span class="result-title">辩论纪实</span>
-          <div class="button-actions">
-            <button class="icon-btn" @click="copyText">
-              {{ copied ? '已复制' : '复制辩词' }}
-            </button>
-            <button class="icon-btn" @click="showShareGuide = true">
-              分享朋友圈
-            </button>
-            <button class="icon-btn" @click="resetDebate">
-              重新开始
-            </button>
-          </div>
-        </div>
-
-        <div class="ai-response-wrapper">
-          <div class="output-content" style="text-align: left;">{{ result }}</div>
+      <div class="selector-group">
+        <label class="selector-label">选择辩论对手流派</label>
+        <div class="style-selector">
+          <button 
+            v-for="style in styleOptions" 
+            :key="style.value"
+            class="style-option"
+            :class="{ active: activeStyle === style.value }"
+            @click="activeStyle = style.value"
+          >
+            {{ style.label }}
+          </button>
         </div>
       </div>
 
-      <!-- 加载状态 -->
-      <div v-if="loading" class="ai-loading">
-        <div class="spinner"></div>
-        <p>正在为您召集对手展开激辩，构建最强辩护逻辑...</p>
-      </div>
+      <button 
+        class="action-btn" 
+        :disabled="loading || !userInput.trim()"
+        @click="handleGenerate"
+      >
+        {{ loading ? '正在由 AI 辩论大师激烈交锋中...' : '开始一键辩论对抗' }}
+      </button>
 
       <!-- 异常提示 -->
-      <div v-if="errorMsg" style="color: var(--accent-color); font-size: 0.85rem; text-align: center; margin-top: 0.5rem;">
+      <div v-if="errorMsg" class="error-banner">
         {{ errorMsg }}
       </div>
-      </div>
     </main>
+
+    <!-- 生成结果卡片 (模块二：内容产出与分享) -->
+    <section v-if="result || loading" class="glass-card result-section">
+      <div class="result-header">
+        <div class="result-title-group">
+          <span class="result-title">辩论对抗交锋结论</span>
+          <span v-if="result" class="success-badge">生成成功</span>
+        </div>
+        <div class="button-actions">
+          <button v-if="result && !isImageProject" class="icon-btn" @click="copyText">
+            {{ copied ? '已复制' : '复制辩词' }}
+          </button>
+          <button v-if="result" class="icon-btn highlight" @click="showShareCard = true">
+            生成分享卡片
+          </button>
+          <a v-if="result && isImageProject" :href="result" target="_blank" download class="icon-btn" style="text-decoration: none;">
+            查看原图
+          </a>
+        </div>
+      </div>
+
+      <!-- 加载中骨架屏 -->
+      <div v-if="loading" class="skeleton">
+        <div class="skeleton-line" style="width: 80%"></div>
+        <div class="skeleton-line" style="width: 95%"></div>
+        <div class="skeleton-line" style="width: 60%"></div>
+        <div class="skeleton-line" style="width: 75%"></div>
+      </div>
+
+      <!-- 渲染结果 -->
+      <div v-else-if="result">
+        <img v-if="isImageProject" :src="result" alt="Generated visual" class="image-output" />
+        <div v-else class="output-content">{{ result }}</div>
+      </div>
+    </section>
+
+    <!-- 演示案例区组件 (模块三：30 条辩论精选案例展示) -->
+    <DemoShowcase @use-sample="handleUseSample" />
 
     <!-- 底部隐私与服务条款链接 -->
     <footer class="footer-links">
@@ -174,8 +136,8 @@
       <div class="modal-content">
         <h3>Privacy Policy</h3>
         <div class="modal-text-content modal-scroll-area">
-          <p>我们非常重视您的隐私。您在本应用中输入的所有辩题及对话细节均仅用于实时大模型分析与生成，我们不会在服务器端进行任何永久存储。</p>
-          <p>为了记录您的免费试用额度，本应用会在您的浏览器本地（localStorage）记录试用次数与朋友圈解锁状态。</p>
+          <p>我们非常重视您的隐私。您在本应用中输入的所有辩题及立场观点仅用于实时大模型辩论推理，我们不会在服务器端进行永久存储或记录。</p>
+          <p>为了记录您的免费额度，本应用会在您的浏览器本地（localStorage）记录试用次数与解锁状态。</p>
         </div>
         <button class="modal-btn" @click="showPrivacy = false">关闭</button>
       </div>
@@ -186,163 +148,161 @@
       <div class="modal-content">
         <h3>Terms of Service</h3>
         <div class="modal-text-content modal-scroll-area">
-          <p>欢迎使用我们的 AI 辩论擂台服务。使用本应用即代表您同意并承诺遵守当地有关人工智能生成内容（AIGC）的法律法规。</p>
-          <p>所有辩论生成内容（尤其是“奇葩杠精”和“暴躁老哥”流派）均由 AI 大模型生成以用于文化讨论、逻辑思辨或娱乐效果，并不代表作者立场，且不构成任何实质性法律或人身决策建议。</p>
+          <p>欢迎使用我们的 AI 辩论擂台微应用。本应用仅用于逻辑思辨训练、观点对抗模拟与娱乐展示，辩词内容不代表平台的立场或观点。</p>
         </div>
         <button class="modal-btn" @click="showTerms = false">关闭</button>
       </div>
     </div>
 
-    <!-- 联系我们弹窗 -->
+    <!-- 联系我们弹窗 (自适应高度 + weixin.png & dingtalk.png 展示) -->
     <div v-if="showContact" class="modal-overlay" @click.self="showContact = false">
-      <div class="modal-content" style="max-width: 420px;">
+      <div class="modal-content contact-modal-content">
         <h3>Contact Us</h3>
-        <div class="modal-text-content">
-          <p>如果您在使用过程中遇到任何问题，或有合作意向，可以通过微信或钉钉联系我们：</p>
-          <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 0.5rem; margin-bottom: 0.5rem; flex-wrap: wrap;">
-            <div style="text-align: center;">
-              <img :src="weixinImg" alt="微信二维码" style="width: 130px; height: 130px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);" />
-              <div style="font-size: 0.75rem; margin-top: 0.25rem; color: var(--text-secondary);">微信</div>
+        <div class="modal-text-content contact-card-body">
+          <p>如果您在使用过程中遇到任何问题，或有合作意向，可以通过以下方式联系我们：</p>
+          <div class="contact-qr-container">
+            <div class="contact-qr-card">
+              <img :src="weixinImg" alt="微信客服" class="contact-qr-img" />
+              <span class="contact-qr-label">微信客服</span>
             </div>
-            <div style="text-align: center;">
-              <img :src="dingtalkImg" alt="钉钉二维码" style="width: 130px; height: 130px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);" />
-              <div style="font-size: 0.75rem; margin-top: 0.25rem; color: var(--text-secondary);">钉钉</div>
+            <div class="contact-qr-card">
+              <img :src="dingtalkImg" alt="钉钉交流群" class="contact-qr-img" />
+              <span class="contact-qr-label">钉钉交流群</span>
             </div>
           </div>
+          <p class="contact-email">支持反馈邮箱: <span style="color: var(--primary-color);">us@wuxian.xyz</span></p>
         </div>
         <button class="modal-btn" @click="showContact = false">关闭</button>
       </div>
     </div>
 
-    <!-- 裂变拦截弹窗 -->
+    <!-- 裂变拦截弹窗 (模块四：裂变机制) -->
     <FissionModal 
       :visible="showFission" 
       :wechat-id="wechatId"
       @unlocked="handleUnlocked"
     />
 
-    <!-- 分享引导浮层 -->
+    <!-- 分享卡片弹窗 (模块二扩展) -->
+    <ShareCardModal
+      :visible="showShareCard"
+      :content="result"
+      :wechat-id="wechatId"
+      @close="showShareCard = false"
+    />
+
+    <!-- 微信 H5 分享引导浮层 -->
     <div v-if="showShareGuide" class="share-guide-overlay" @click="handleShareClose">
       <div class="share-guide-arrow">↗</div>
       <div class="share-guide-content">
         <p>点击右上角菜单 <strong>•••</strong></p>
         <p>选择 <strong>「分享到朋友圈」</strong></p>
-        <p class="share-guide-sub">让好友一起体验智能激辩的魅力</p>
+        <p class="share-guide-sub">分享这款高效率的 AI 智能微应用</p>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed } from 'vue';
 import UserTicker from './components/UserTicker.vue';
 import FissionModal from './components/FissionModal.vue';
+import DemoShowcase from './components/DemoShowcase.vue';
+import ShareCardModal from './components/ShareCardModal.vue';
 import appConfig from './config.json';
 import weixinImg from '../asset/weixin.png';
 import dingtalkImg from '../asset/dingtalk.png';
 
-// 读取动态配置文件
-const appTitle = ref(appConfig.title || '网腾无限AI辩论擂台');
+const appTitle = ref(appConfig.title || '网腾无限AI 辩论擂台');
 const wechatId = ref(appConfig.wechatId || 'ai_wuxian_xyz');
 const promptTopic = ref(appConfig.promptTopic || '');
 
 const userInput = ref('');
-const inquiryStance = ref('正方');
 const loading = ref(false);
 const errorMsg = ref('');
 const result = ref('');
 const copied = ref(false);
+const showSuccessToast = ref(false);
 const showFission = ref(false);
 const showPrivacy = ref(false);
 const showTerms = ref(false);
 const showContact = ref(false);
 const showShareGuide = ref(false);
+const showShareCard = ref(false);
 
-const styleOptions = [
-  { label: '奇葩杠精', value: '奇葩杠精流派：无厘头抬杠、偷换概念、强词夺理。' },
-  { label: '儒雅学者', value: '儒雅学者流派：温文尔雅，引经据典，以理服人。' },
-  { label: '暴躁老哥', value: '暴躁老哥流派：大白话、反问句句句扎心，风格刚猛热烈。' },
-  { label: '赛博朋克', value: '赛博朋克流派：冰冷数据和逻辑优化的绝对理性，客观利弊解析。' },
-  { label: '九巨擘圆桌会', value: '九巨擘圆桌会流派：一次性模拟马斯克、比尔盖茨、扎克伯格、贝索斯、乔布斯、柏拉图、爱因斯坦、特斯拉、秦始皇共9人针对该辩题展开激烈的唇枪舌战大混战。' }
-];
+const handleShareClose = () => {
+  showShareGuide.value = false;
+  localStorage.setItem('shared_fission', 'true');
+};
 
-const activeStyle = ref(styleOptions[0].value);
-
-interface HistoryItem {
-  id: string;
-  timestamp: string;
-  topic: string;
-  stance: string;
-  styleLabel: string;
-  output: string;
-}
-
-const historyList = ref<HistoryItem[]>([]);
-const showHistory = ref(false);
-
-const loadHistory = () => {
-  try {
-    const raw = localStorage.getItem('bianlun_history_records');
-    historyList.value = raw ? JSON.parse(raw) : [];
-  } catch (e) {
-    historyList.value = [];
+const getCookie = (name: string): string | null => {
+  const nameEQ = name + "=";
+  const ca = document.cookie.split(';');
+  for (let i = 0; i < ca.length; i++) {
+    let c = ca[i];
+    while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+    if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
   }
+  return null;
 };
 
-const saveHistory = () => {
-  localStorage.setItem('bianlun_history_records', JSON.stringify(historyList.value));
-};
+const userToken = ref(getCookie('wuxian_session'));
+const isLoggedIn = computed(() => !!userToken.value);
+const authUsesCount = ref(parseInt(localStorage.getItem('auth_uses') || '0', 10));
 
-const addHistoryRecord = () => {
-  const matched = styleOptions.find(o => o.value === activeStyle.value);
-  const styleLabel = matched ? matched.label : '辩论对手';
-
-  const newItem: HistoryItem = {
-    id: Date.now().toString(),
-    timestamp: new Date().toLocaleString(),
-    topic: userInput.value,
-    stance: inquiryStance.value,
-    styleLabel,
-    output: result.value
-  };
-  historyList.value.unshift(newItem);
-  saveHistory();
-};
-
-const deleteHistoryRecord = (id: string) => {
-  historyList.value = historyList.value.filter(item => item.id !== id);
-  saveHistory();
-};
-
-const clearAllHistory = () => {
-  if (confirm('确认清空所有历史辩论记录吗？此操作不可恢复。')) {
-    historyList.value = [];
-    saveHistory();
-  }
-};
-
-const selectHistoryItem = (item: HistoryItem) => {
-  userInput.value = item.topic;
-  inquiryStance.value = item.stance;
-  result.value = item.output;
-  showHistory.value = false;
-};
-
-onMounted(() => {
-  loadHistory();
+const isImageProject = computed(() => {
+  return appConfig.type === 'image';
 });
 
-// 判断是否达到试用限制
+// 辩论立场选项
+const positionOptions = [
+  { label: '正方 (支持)', value: '正方立场：支持并赞成该观点' },
+  { label: '反方 (反对)', value: '反方立场：强烈驳斥并反对该观点' },
+  { label: '裁判 (中立)', value: '裁判视角：客观中立，剖析双方逻辑瑕疵' },
+];
+const activePosition = ref(positionOptions[0].value);
+
+// 辩论对手流派选项
+const styleOptions = computed(() => {
+  if (isImageProject.value) {
+    return [
+      { label: '写真照片', value: '<photography>' },
+      { label: '卡通动漫', value: '<anime>' },
+      { label: '水彩画卷', value: '<watercolor>' },
+      { label: '插画艺术', value: '<illustration>' },
+    ];
+  } else {
+    return [
+      { label: '九巨擘圆桌辩论', value: '九巨擘圆桌辩论大混战：马斯克、比尔盖茨、扎克伯格、贝索斯、乔布斯、柏拉图、爱因斯坦、特斯拉、秦始皇' },
+      { label: '奇葩杠精', value: '奇葩杠精流派，无厘头偷换概念强词夺理' },
+      { label: '儒雅学者', value: '儒雅学者流派，引经据典温文尔雅字字诛心' },
+      { label: '暴躁老哥', value: '暴躁老哥流派，大白话连珠炮刚猛直击漏洞' },
+      { label: '赛博朋克', value: '赛博朋克流派，绝对理性数据与系统优化架构' },
+    ];
+  }
+});
+
+const activeStyle = ref(styleOptions.value[0].value);
+
 const isLimitReached = computed(() => {
+  if (isLoggedIn.value) {
+    return authUsesCount.value >= 15;
+  }
   const uses = parseInt(localStorage.getItem('free_uses') || '0', 10);
   const shared = localStorage.getItem('shared_fission') === 'true';
   return uses >= 3 && !shared;
 });
 
-// 获取本地或生产 API 请求端点
 const apiEndpoint = import.meta.env.DEV
   ? '/api/local/generate'
   : (import.meta.env.VITE_API_ENDPOINT || 'https://api.wuxian.xyz/api/v1/generate');
+
+const triggerSuccessToast = () => {
+  showSuccessToast.value = true;
+  setTimeout(() => {
+    showSuccessToast.value = false;
+  }, 3000);
+};
 
 const handleGenerate = async () => {
   if (isLimitReached.value) {
@@ -360,9 +320,10 @@ const handleGenerate = async () => {
       headers: {
         'Content-Type': 'application/json',
       },
+      credentials: 'include',
       body: JSON.stringify({
-        taskType: 'text',
-        prompt: `辩论背景：${promptTopic.value}。辩论辩题：${userInput.value}。用户立场：${inquiryStance.value}。对手辩论流派与作风：${activeStyle.value}`,
+        taskType: isImageProject.value ? 'image' : 'text',
+        prompt: `辩题：${userInput.value}，用户${activePosition.value}，选择对抗对手流派：${activeStyle.value}`,
         style: activeStyle.value
       })
     });
@@ -372,13 +333,16 @@ const handleGenerate = async () => {
       errorMsg.value = data.error;
     } else {
       result.value = data.result;
+      triggerSuccessToast();
       
-      // 自动加入历史记录
-      addHistoryRecord();
-      
-      // 累加本地试用次数
-      const currentUses = parseInt(localStorage.getItem('free_uses') || '0', 10);
-      localStorage.setItem('free_uses', (currentUses + 1).toString());
+      if (isLoggedIn.value) {
+        const nextAuthUses = authUsesCount.value + 1;
+        localStorage.setItem('auth_uses', nextAuthUses.toString());
+        authUsesCount.value = nextAuthUses;
+      } else {
+        const currentUses = parseInt(localStorage.getItem('free_uses') || '0', 10);
+        localStorage.setItem('free_uses', (currentUses + 1).toString());
+      }
     }
   } catch (err: any) {
     errorMsg.value = '请求接口失败，请检查网络或本地代理服务。';
@@ -387,20 +351,14 @@ const handleGenerate = async () => {
   }
 };
 
+const handleUseSample = (sampleTopic: string) => {
+  userInput.value = sampleTopic;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
 const handleUnlocked = () => {
   showFission.value = false;
   handleGenerate();
-};
-
-const handleShareClose = () => {
-  showShareGuide.value = false;
-  localStorage.setItem('shared_fission', 'true');
-};
-
-const resetDebate = () => {
-  result.value = '';
-  userInput.value = '';
-  errorMsg.value = '';
 };
 
 const copyText = async () => {
@@ -415,367 +373,3 @@ const copyText = async () => {
   }
 };
 </script>
-
-<style scoped>
-.divination-setup {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-}
-
-.stance-selector {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.stance-option {
-  flex: 1;
-  padding: 0.75rem;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  color: var(--text-secondary);
-  font-size: 0.9rem;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.stance-option:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text-primary);
-}
-
-.stance-option.active {
-  background: var(--primary-color);
-  color: #fff;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 10px rgba(168, 85, 247, 0.3);
-}
-
-.style-select {
-  width: 100%;
-  padding: 0.75rem 1rem;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  color: var(--text-primary);
-  font-family: inherit;
-  font-size: 0.9rem;
-  outline: none;
-  transition: all 0.3s ease;
-  cursor: pointer;
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.5)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  background-size: 16px;
-  padding-right: 2.5rem;
-}
-
-.style-select:focus {
-  border-color: var(--primary-color);
-  box-shadow: 0 0 10px rgba(168, 85, 247, 0.2);
-}
-
-.style-select option {
-  background-color: #1a1726;
-  color: #fff;
-}
-
-.divination-result {
-  text-align: center;
-}
-
-.ai-loading {
-  padding: 2rem 1rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-}
-
-.spinner {
-  width: 32px;
-  height: 32px;
-  border: 3px solid rgba(255, 255, 255, 0.1);
-  border-top-color: var(--primary-color);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.ai-loading p {
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-}
-
-.ai-response-wrapper {
-  margin-top: 1.5rem;
-}
-
-/* 分享引导浮层 */
-.share-guide-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(17, 14, 36, 0.9);
-  z-index: 1000;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  padding: 2rem;
-  box-sizing: border-box;
-  color: #fff;
-  cursor: pointer;
-}
-
-.share-guide-arrow {
-  font-size: 3rem;
-  color: var(--primary-color);
-  animation: bounce 1s infinite alternate;
-  margin-right: 1.5rem;
-}
-
-.share-guide-content {
-  text-align: center;
-  width: 100%;
-  margin-top: 2rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.share-guide-content p {
-  font-size: 1.2rem;
-  margin: 0;
-}
-
-.share-guide-sub {
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-  margin-top: 1rem !important;
-}
-
-@keyframes bounce {
-  from { transform: translateY(0); }
-  to { transform: translateY(-10px); }
-}
-
-/* 右上角常驻分享按钮 */
-.floating-share-btn {
-  position: fixed;
-  top: 1rem;
-  right: 1rem;
-  z-index: 99;
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.5rem 0.8rem;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 20px;
-  color: var(--text-primary);
-  font-size: 0.8rem;
-  font-weight: 500;
-  cursor: pointer;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.floating-share-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: var(--primary-color);
-  box-shadow: 0 4px 16px rgba(168, 85, 247, 0.2);
-}
-
-.share-icon {
-  width: 14px;
-  height: 14px;
-}
-
-/* 历史记录选项卡 */
-.card-tabs {
-  display: flex;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  margin-bottom: 1.25rem;
-  gap: 0.5rem;
-}
-
-.tab-btn {
-  background: none;
-  border: none;
-  padding: 0.5rem 1rem;
-  color: var(--text-secondary);
-  font-size: 0.9rem;
-  font-weight: bold;
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-  transition: all 0.2s ease;
-}
-
-.tab-btn:hover {
-  color: var(--text-primary);
-}
-
-.tab-btn.active {
-  color: var(--primary-color);
-  border-bottom-color: var(--primary-color);
-}
-
-/* 历史卡片网格 */
-.history-view {
-  text-align: left;
-}
-
-.history-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-}
-
-.clear-all-btn {
-  background: none;
-  border: none;
-  color: var(--accent-color);
-  font-size: 0.8rem;
-  cursor: pointer;
-  transition: opacity 0.2s ease;
-}
-
-.clear-all-btn:hover {
-  opacity: 0.8;
-}
-
-.empty-state {
-  text-align: center;
-  padding: 3rem 1rem;
-  color: var(--text-secondary);
-  font-size: 0.9rem;
-}
-
-.history-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 1rem;
-}
-
-.history-card {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 10px;
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  transition: all 0.3s ease;
-}
-
-.history-card:hover {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(168, 85, 247, 0.2);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-}
-
-.h-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.75rem;
-}
-
-.h-card-style {
-  background: rgba(168, 85, 247, 0.15);
-  color: var(--primary-color);
-  padding: 0.2rem 0.5rem;
-  border-radius: 4px;
-  font-weight: bold;
-}
-
-.h-card-time {
-  color: var(--text-secondary);
-}
-
-.h-card-body {
-  flex: 1;
-  font-size: 0.85rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.h-card-input {
-  color: var(--text-secondary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  margin: 0;
-}
-
-.nature-pill {
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-  background: rgba(255, 255, 255, 0.05);
-  padding: 0.15rem 0.4rem;
-  border-radius: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.h-card-excerpt {
-  color: var(--text-primary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  margin: 0;
-  white-space: pre-wrap;
-}
-
-.h-card-actions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-  padding-top: 0.75rem;
-}
-
-.h-action-btn {
-  background: none;
-  border: none;
-  font-size: 0.8rem;
-  font-weight: bold;
-  cursor: pointer;
-  transition: color 0.2s ease;
-}
-
-.load-btn {
-  color: var(--primary-color);
-}
-
-.load-btn:hover {
-  color: var(--primary-hover);
-}
-
-.delete-btn {
-  color: var(--accent-color);
-}
-
-.delete-btn:hover {
-  color: #ef4444;
-}
-</style>
