@@ -323,7 +323,7 @@ const handleGenerate = async () => {
       credentials: 'include',
       body: JSON.stringify({
         taskType: isImageProject.value ? 'image' : 'text',
-        prompt: `辩题：${userInput.value}，用户${activePosition.value}，选择对抗对手流派：${activeStyle.value}`,
+        prompt: `${promptTopic.value}\n辩题：${userInput.value}，用户${activePosition.value}，选择对抗对手流派：${activeStyle.value}`,
         style: activeStyle.value
       })
     });
